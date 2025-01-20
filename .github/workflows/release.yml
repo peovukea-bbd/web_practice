@@ -24,7 +24,7 @@ jobs:
     - name: Package the app as a zip
       run: |
         mkdir -p release
-        zip -r release/app.zip . # Zip the entire application directory
+        zip -r release/app.zip .  # Zip the entire application directory
 
     - name: Upload the zip as an artifact
       uses: actions/upload-artifact@v3

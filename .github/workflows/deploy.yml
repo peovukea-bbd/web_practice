@@ -24,6 +24,7 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: app-zip
+      continue-on-error: true
 
     - name: Deploy to AWS Lambda
       run: |
