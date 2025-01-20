@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.status(200).send({ message: 'Hello, World from Peo!' });
+  res.status(200).send({ message: 'Hello, World!' });
 });
 
 // Export the handler for AWS Lambda
