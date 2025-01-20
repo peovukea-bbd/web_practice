@@ -59,3 +59,39 @@ jobs:
           aws lambda update-function-code \
             --function-name helloPeo \
             --zip-file fileb://function.zip
+
+      - name: Create or Update API Gateway
+        run: |
+          # Check if API exists
+          API_ID=$(aws apigatewayv2 get-apis --query "Items[?Name=='helloPeo-api'].ApiId" --output text)
+          
+          if [ -z "$API_ID" ]; then
+            # Create new API
+            echo "Creating new API Gateway..."
+            API_RESPONSE=$(aws apigatewayv2 create-api \
+              --name helloPeo-api \
+              --protocol-type HTTP \
+              --target arn:aws:lambda:af-south-1:${{ secrets.AWS_ACCOUNT_ID }}:function:helloPeo)
+            
+            API_ID=$(echo $API_RESPONSE | jq -r '.ApiId')
+            
+            # Create stage
+            aws apigatewayv2 create-stage \
+              --api-id $API_ID \
+              --stage-name prod \
+              --auto-deploy
+
+            # Add Lambda permission
+            aws lambda add-permission \
+              --function-name helloPeo \
+              --statement-id apigateway-permission \
+              --action lambda:InvokeFunction \
+              --principal apigateway.amazonaws.com \
+              --source-arn "arn:aws:execute-api:af-south-1:${{ secrets.AWS_ACCOUNT_ID }}:$API_ID/*/*/*"
+          else
+            echo "API Gateway already exists with ID: $API_ID"
+          fi
+          
+          # Output the API URL
+          API_URL=$(aws apigatewayv2 get-api --api-id $API_ID --query 'ApiEndpoint' --output text)
+          echo "API Gateway URL: $API_URL"
