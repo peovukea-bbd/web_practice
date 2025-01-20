@@ -18,14 +18,19 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: af-south-1  
+        aws-region: us-east-1  # Adjust this to your desired region
 
     - name: Download the zip artifact
       uses: actions/download-artifact@v3
       with:
         name: app-zip
-      continue-on-error: true
+
+    - name: Check downloaded files
+      run: |
+        ls -alh # List all files to make sure app.zip is downloaded
 
     - name: Deploy to AWS Lambda
       run: |
-        aws lambda update-function-code --function-name helloPeo --zip-file fileb://release/app.zip
+        # Ensure the artifact is where it should be, and then deploy
+        mv app-zip/app.zip release/app.zip  # Move the file to the expected path
+        aws lambda update-function-code --function-name YourLambdaFunctionName --zip-file fileb://release/app.zip
