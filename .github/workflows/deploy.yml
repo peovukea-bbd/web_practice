@@ -1,36 +1,66 @@
-name: Deploy to AWS Lambda
+name: Build, Test, and Deploy
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up AWS CLI
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1  # Adjust this to your desired region
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
 
-    - name: Download the zip artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: app-zip
+      - name: Install dependencies
+        run: npm install
 
-    - name: Check downloaded files
-      run: |
-        ls -alh # List all files to make sure app.zip is downloaded
+      - name: Run tests
+        run: npm test
 
-    - name: Deploy to AWS Lambda
-      run: |
-        # Ensure the artifact is where it should be, and then deploy
-        mv app-zip/app.zip release/app.zip  # Move the file to the expected path
-        aws lambda update-function-code --function-name helloPeo --zip-file fileb://release/app.zip
+      - name: Package application
+        run: |
+          mkdir -p release
+          zip -r release/app.zip . \
+            -x "*.git*" \
+            -x "*node_modules*" \
+            -x "*.env*" \
+            -x "*release*"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-zip
+          path: release/app.zip
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: app-zip
+          path: release
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: af-south-1
+
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name helloPeo \
+            --zip-file fileb://release/app.zip
