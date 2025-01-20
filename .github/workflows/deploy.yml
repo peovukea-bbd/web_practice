@@ -1,4 +1,5 @@
 name: Build, Test, and Deploy
+name: Build, Test, and Deploy
 
 on:
   push:
@@ -7,11 +8,17 @@ on:
   pull_request:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
+  build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: Checkout code
         uses: actions/checkout@v3
 
